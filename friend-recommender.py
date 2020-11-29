@@ -107,6 +107,8 @@ class SocialNetwork:
         common_friends = 0
         total_friends = 0
 
+        print(user)
+
         recommended_friend = ''
 
         for friend in self.get_friends(user):
@@ -130,21 +132,61 @@ class SocialNetwork:
                 jaccard_dict[person] = jaccard_index
                 #print(jaccard_index)
                 #print(jaccard_list)
-        print(jaccard_dict)
+        #print(jaccard_dict)
 
+        # whichever friend has the highest Jaccard index is the friend who is most similar
+        # from our jaccard dict, find the specific person who has the highest jaccard index
+            # this is the key with the highest value
 
+        # https://stackoverflow.com/questions/268272/getting-key-with-maximum-value-in-dictionary
+        highest_jaccard_person = max(jaccard_dict, key=jaccard_dict.get)
 
+        # print(highest_jaccard_person)
 
-        # find friends in common - numerator
+        """
+        Out of the most similar person's friends, find the one who has the most followers.
+            - We won't recommend the most similar person - the pool is the similar person's friends
+            - The person cannot already be following the suggested person
+            - A person also can't be friends with themselves. 
+        """
 
-        # total friends - friend A + B
+        # automatically excludes the similar person themselves
+        similar_person_friend_list = self.get_friends(highest_jaccard_person)
+        #print(similar_person_friend_list)
 
+        list_of_suggestions = []
 
-        #jaccard_index =
+        # for suggestion in similar_person_friend_list:
+        #     if suggestion in user_friends:
+        #         pass
+        #     elif suggestion == user:
+        #         pass
+        #     else:
+        #         list_of_suggestions.append(suggestion)
 
-        # friend dictionary
-        #dict_friends = {}
+        for suggestion in similar_person_friend_list:
+            if suggestion not in user_friends and suggestion != user: # add stipulations listed above
+                list_of_suggestions.append(suggestion)
 
+        #print(list_of_suggestions)
+
+        if not list_of_suggestions: # what if there are no recommendations? e.g. for Cameron - already follows everyone
+            return []
+
+        # assume there are recommendations, because the function has not returned []
+        suggestion_dict = {} # we want to create a dictionary of all people we could potentially recommend
+
+        # create a dictionary with each suggested person and their follower count
+        for person in list_of_suggestions:
+            suggestion_dict[person] = len(self.get_friends(person))
+
+        #print(suggestion_dict)
+
+        # if there are multiple people that could be recommended, recommend the one with the most followers
+        person_to_recommend = max(suggestion_dict, key=suggestion_dict.get)
+        print(person_to_recommend)
+
+        return person_to_recommend
 
     def to_dot(self):
         result = []
@@ -189,13 +231,7 @@ def main():
 
     print('---')
 
-    network.suggest_friend("francis")
-
-
-    #network = create_network_from_file('simple.network')
-    #print(network.to_dot())
-    #print(network.suggest_friend('francis'))
-
+    network.suggest_friend("erin")
 
 if __name__ == '__main__':
     main()
