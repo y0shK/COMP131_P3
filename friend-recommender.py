@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+from typing import List
 
 class SocialNetwork:
 
@@ -8,7 +8,7 @@ class SocialNetwork:
         '''
         self.users = {}
 
-    def list_users(self):
+    def list_users(self) -> List[str]:
         '''List all users in the network
 
         Returns:
@@ -17,7 +17,7 @@ class SocialNetwork:
         # the user will be the key, while the list of the user's friends is the value
         return list(self.users.keys())
 
-    def add_user(self, user):
+    def add_user(self, user: str) -> None:
         '''Add a user to the network
 
         This user will have no friends initially.
@@ -31,10 +31,7 @@ class SocialNetwork:
         # the user has no initial friends - this is an empty list of friends for the value
         self.users[user] = []
 
-        #print(self.users[user])
-        #print("hi")
-
-    def add_friend(self, user, friend):
+    def add_friend(self, user: str, friend: str) -> None:
         '''Adds a friend to a user
 
         Note that "friends" are one-directional - this is the equivalent of
@@ -57,19 +54,11 @@ class SocialNetwork:
             self.add_user(friend)
 
         # at this point, the user and friend are both in the network
-        #self.users[user] = friend
 
-        # for the empty list of friends for each user, append all of user's friends
+        # for the empty list of friends for the user, add the friend to the user's friend list
         self.users[user].append(friend)
-        #users[user] = friend
-        #print(user)
-        # print(friend)
-        #print(self.users[user])
 
-
-
-
-    def get_friends(self, user):
+    def get_friends(self, user: str) -> List[str]:
         '''Get the friends of a user
 
         Arguments:
@@ -80,11 +69,11 @@ class SocialNetwork:
 
         '''
         # username - key, list of user's friends - value
-        # given the key, get the value
+        # given the key, get the list of values and return them
         return self.users[user] # values
 
 
-    def suggest_friend(self, user):
+    def suggest_friend(self, user: str) -> str:
         '''Suggest a friend to the user
 
         See project specifications for details on this algorithm.
@@ -95,56 +84,127 @@ class SocialNetwork:
         Returns:
             str: The username of a new candidate friend for the user
         '''
-        # find total friends - denominator
 
+        # store user's friends
         user_friends = []
-        #friend_friends = []
-        other_person_friends = []
 
-        jaccard_list = []
-        jaccard_dict = {}
+        # store jaccard information
+        jaccard_list = [] # raw numbers
+        jaccard_dict = {} # number attached to person
 
         common_friends = 0
         total_friends = 0
 
-        recommended_friend = ''
+        print(user)
 
+        # get all of the user's friends - the user's friends cannot be suggested
         for friend in self.get_friends(user):
             user_friends.append(friend)
 
+        # iterate through all of the people in the system
         for person in self.users.keys():
             if person != user:
                 other_person_friends = self.get_friends(person)
-                #print(other_person_friends)
 
-                # common?
-                for other_person in other_person_friends:
+                # are the friends in common?
+                for other_person in other_person_friends: # iterate, see if current user friend == current friend friend
                     if other_person in self.get_friends(user):
-                        common_friends += 1
-                    total_friends += 1
+                        common_friends += 1 # is the other person's friend also the user's? track that for jaccard
+                    total_friends += 1 # the total number of friends is always incremented - other person's friends
 
-                total_friends += len(self.get_friends(user))
+                total_friends += len(self.get_friends(user)) # add user's friends to total
 
-                jaccard_index = common_friends / total_friends
+                jaccard_index = common_friends / total_friends # each person's jaccard index
                 jaccard_list.append(jaccard_index)
                 jaccard_dict[person] = jaccard_index
-                #print(jaccard_index)
-                #print(jaccard_list)
-        print(jaccard_dict)
 
+        # whichever friend has the highest Jaccard index is the friend who is most similar
+        # from our jaccard dict, find the specific person who has the highest jaccard index
+            # this is the key with the highest value
 
+        # https://stackoverflow.com/questions/268272/getting-key-with-maximum-value-in-dictionary
+        # how do we get the maximum element?
 
+        # https://stackoverflow.com/questions/6783000/which-maximum-does-python-pick-in-the-case-of-a-tie
+        # max() picks the first element in case of tie - we're making one suggestion
 
-        # find friends in common - numerator
+        highest_jaccard_person = max(jaccard_dict, key=jaccard_dict.get)
 
-        # total friends - friend A + B
+        print("most similar: " + highest_jaccard_person)
 
+        """
+        Out of the most similar person's friends, find the one who has the most followers.
+            - We won't recommend the most similar person - the pool is the similar person's friends
+            - The person cannot already be following the suggested person
+            - A person also can't be friends with themselves. 
+        """
 
-        #jaccard_index =
+        # get_friends() automatically excludes the similar person themselves
+        similar_person_friend_list = self.get_friends(highest_jaccard_person)
 
-        # friend dictionary
-        #dict_friends = {}
+        list_of_suggestions = []
 
+        for suggestion in similar_person_friend_list:
+            if suggestion not in user_friends and suggestion != user: # add stipulations listed above
+                list_of_suggestions.append(suggestion)
+
+        if not list_of_suggestions: # what if there are no recommendations? e.g. for Cameron - already follows everyone
+            """
+            If there is no immediate suggestion, then sort the list of jaccard indices
+                and find the "next most" similar person.
+            After finding that person, return their friend list and continue as usual.
+            This ensures that each person will get a recommendation unless they have really friended everyone.
+            """
+
+            # list(sorted())
+            # https://www.geeksforgeeks.org/python-program-to-find-second-maximum-value-in-dictionary/
+
+            # access key with value
+            # https://stackoverflow.com/questions/8023306/get-key-by-value-in-dictionary
+
+            # go through all of the keys in the dictionary and find the jaccard value that is second highest
+            # then grab the key associated with that specific value
+            for i in range(1, len(jaccard_dict.keys())):
+                # start at 1 because we're using -i, i.e. second most, ...
+                # starting at 0 would give [-0] = [0] = least element
+                nth_similar_value = list(sorted(jaccard_dict.values()))[-i] # second most, third most, ...
+                nth_similar_value = list(jaccard_dict.values()).index(nth_similar_value) # index of the new person
+                nth_similar_key = list(jaccard_dict.keys())[nth_similar_value] # this is the name of the new person
+
+                # all() list comprehension - if the suggested friends are already user's friends, can't suggest them
+
+                # https://thispointer.com/python-check-if-a-list-contains-all-the-elements-of-another-list/
+                all_in_user_friends = all(friend in self.get_friends(user) for friend in self.get_friends(nth_similar_key))
+
+                if not all_in_user_friends: # are the friends distinct, and can they be suggested?
+                    break
+
+            # assuming we need to find a second match
+            # e.g. Erin, Bailey in intermediate.network
+            similar_person_friend_list = self.get_friends(nth_similar_key)
+            print("second most similar: " + nth_similar_key)
+
+            for suggestion in similar_person_friend_list:
+                if suggestion not in user_friends and suggestion != user:  # add stipulations listed above
+                    list_of_suggestions.append(suggestion) # we now have a list of recommendations
+
+        # there are recommendations, either because we found the suggested friend first try or eventually found them
+        suggestion_dict = {} # we want to create a dictionary of all people we could potentially recommend
+
+        # create a dictionary with each suggested person and their follower count
+        for person in list_of_suggestions:
+            suggestion_dict[person] = len(self.get_friends(person))
+
+        # in the very rare case that the user has friended EVERYONE else
+        if len(self.get_friends(user)) == len(self.users) - 1: # can't friend themselves
+            print("no recommendations - already friended entire network")
+            return ''
+
+        # if there are multiple people that could be recommended, recommend the one with the most followers
+        person_to_recommend = max(suggestion_dict, key=suggestion_dict.get)
+        print("recommendation: " + person_to_recommend)
+
+        return person_to_recommend
 
     def to_dot(self):
         result = []
@@ -180,22 +240,11 @@ def create_network_from_file(filename):
 
 def main():
     network = create_network_from_file('simple.network')
-    network.to_dot()
-    alex_friends = network.get_friends("alex")
-    print(alex_friends)
-    print(network.get_friends("darcy"))
-    print(network.get_friends("bailey"))
-    print(network.get_friends("cameron"))
+    dot = network.to_dot()
 
-    print('---')
+    print(dot)
 
-    network.suggest_friend("francis")
-
-
-    #network = create_network_from_file('simple.network')
-    #print(network.to_dot())
-    #print(network.suggest_friend('francis'))
-
+    network.suggest_friend("alex")
 
 if __name__ == '__main__':
     main()
